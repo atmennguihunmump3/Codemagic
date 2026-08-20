@@ -1,7 +1,18 @@
-git init
-git add .
-git commit -m "upload my android project"
-git branch -M main
-git remote add origin https://github.com
-git push -u origin main --force
-
+workflows:
+  android-workflow:
+    name: Android Workflow
+    max_build_duration: 60
+    environment:
+      vars:
+        PACKAGE_NAME: "io.codemagic.android"
+      node: latest
+    triggering:
+      events:
+        - push
+    scripts:
+      - name: Set up local.properties
+        script: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+      - name: Build Android App
+        script: ./gradlew assembleDebug
+    artifacts:
+      - app/build/outputs/apk/**/*.apk
