@@ -1,19 +1,17 @@
-# 1. 建立标准的 Flutter 脚手架
-flutter create --org io.codemagic syncplan_app
-cd syncplan_app
-
-# 2. 根据你的代码库，在本地 lib/ 目录下通过新建文件，把你的主干代码及各 features 页面分别粘贴进去
-# （例如：把 main.dart 贴进 lib/main.dart，把路由贴进 lib/routes.dart 依此类推）
-
-# 3. 运行以下命令确保依赖包在本地下载成功
-flutter pub get
-
-# 4. 把那份修复好的正确的 codemagic.yaml 扔进 syncplan_app 根目录下
-
-# 5. 一键把真正的项目推送到你的 GitHub 上
-git init
-git add .
-git commit -m "feat: infrastructure ready for syncplan app"
-git branch -M main
-git remote add origin https://github.com
-git push -u origin main --force
+workflows:
+  flutter-android-workflow:
+    name: Flutter Android Workflow
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+    triggering:
+      events:
+        - push
+    scripts:
+      - name: Get Flutter dependencies
+        script: flutter pub get
+      - name: Build Android APK
+        script: flutter build apk --debug
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
