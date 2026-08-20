@@ -1,18 +1,317 @@
-workflows:
-  android-workflow:
-    name: Android Workflow
-    max_build_duration: 60
-    environment:
-      vars:
-        PACKAGE_NAME: "io.codemagic.android"
-      node: latest
-    triggering:
-      events:
-        - push
-    scripts:
-      - name: Set up local.properties
-        script: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-      - name: Build Android App
-        script: ./gradlew assembleDebug
-    artifacts:
-      - app/build/outputs/apk/**/*.apk
+# SyncPlan Mobile App — Developer Specs & UI Specification
+**Version:** 1.0｜**Date:** 2026-08-20
+
+---
+
+## Part 1 — API & Data Specification
+
+### 🔧 Global Configuration
+```
+SHARED_CALENDAR_ID = "primary"  // single shared enterprise calendar
+REFRESH_COOLDOWN = 30  // seconds
+DEFAULT_PROD_DAYS = 7  // Gantt default view
+DATE_FORMAT = "YYYY-MM-DD"
+TIME_FORMAT = "HH:mm"
+```
+
+### Authentication
+```
+OAuth2 Scope: https://www.googleapis.com/auth/calendar
+Credentials: Securely stored OAuth2 Client Token (embedded)
+Account: dedicated service account with ONLY Calendar API enabled
+```
+
+### API Endpoints Used
+```
+GET    https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events
+POST   https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events
+PATCH  https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events/{eventId}
+DELETE https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events/{eventId}
+```
+
+### Event Title Syntax Schema
+```
+// DELIVERY
+Title Format:  "D# {route} # {driver} # {destination}"
+Parsed Fields: type="D", route, driver, destination
+
+// PRODUCTION
+Title Format:  "P# {lineName} # {taskDetails}"
+Parsed Fields: type="P", lineName, taskDetails
+Event start→end determines multi-day span rendering
+
+// ATTENDANCE
+Title Format:  "A# {employeeName} ({status})"
+Status Values: "Absent" | "Leave"
+Parsed Fields: type="A", employeeName, status
+```
+
+### Permission Logic
+```
+Viewer: accessCode = "VIEWER_PIN"
+  → canView=true, canAdd=false, canDelete=false
+Executer: accessCode = "ADMIN_PIN"
+  → canView=true, canAdd=true, canDelete=true
+```
+
+### Pull-to-Refresh Logic
+```
+lastRefresh = 0
+
+function onRefresh():
+  now = timestamp()
+  if now - lastRefresh < REFRESH_COOLDOWN:
+    remaining = REFRESH_COOLDOWN - (now - lastRefresh)
+    showToast("Data up-to-date. Try again in {remaining}s")
+    return
+  fetchAllEvents()
+  lastRefresh = now
+```
+
+### Conflict & Delete Behavior
+```
+Conflict: Last-Write-Wins → Google API server resolves by request time
+Delete:  DELETE events/{eventId} → permanent removal, NO archive
+```
+
+---
+
+## Part 2 — Parsing Pseudocode
+
+```
+function parseEventTitle(title):
+  if title.startsWith("D#"):
+    parts = splitByDelimiter(title.replace("D# ",""), " # ")
+    return {
+      type: "delivery",
+      route: parts[0],
+      driver: parts[1],
+      destination: parts[2]
+    }
+
+  elif title.startsWith("P#"):
+    parts = splitByDelimiter(title.replace("P# ",""), " # ")
+    return {
+      type: "production",
+      lineName: parts[0],
+      taskDetails: parts[1]
+    }
+
+  elif title.startsWith("A#"):
+    match = regexMatch(title, "A# (.+) \((.+)\)")
+    return {
+      type: "attendance",
+      employeeName: match[1],
+      status: match[2]   // "Absent" or "Leave"
+    }
+
+  else:
+    return null
+
+
+function buildEventTitle(type, fields):
+  switch(type):
+    case "delivery":
+      return `D# ${fields.route} # ${fields.driver} # ${fields.destination}`
+    case "production":
+      return `P# ${fields.lineName} # ${fields.taskDetails}`
+    case "attendance":
+      return `A# ${fields.employeeName} (${fields.status})`
+```
+
+---
+
+## Part 3 — UI Specification & Annotated Layouts
+
+### 🎨 Global Color Palette
+```
+Primary Dark    #0F2B48   // Header, nav, active tab
+Bg Light        #F5F7FA   // Page background
+Card White      #FFFFFF   // Cards
+Text Main       #1A1A1A   // Headings
+Text Body       #444444   // Content
+Text Muted      #888888   // Dates, hints
+Border          #E0E0E0   // Lines, dividers
+Accent Blue     #2E75CC   // Delivery, links, buttons
+Accent Green    #36B37E   // Production
+Accent Orange   #FF9F1C   // Production Line B / Warnings
+Accent Purple   #9C27B0   // Attendance
+Absent Red      #E53935   // Absence markers
+```
+
+### 📐 Standard Dimensions (375pt width baseline)
+```
+Page Margin:      16pt horizontal
+Card Padding:     14pt
+Card Radius:      12pt
+Card Spacing:     12pt
+Header Height:    56pt
+Tab Bar Height:   48pt
+Bottom Nav:       56pt
+Touch Target:     ≥44×44pt
+Font H1:          18pt Bold
+Font CardTitle:   15pt Bold
+Font Body:        14pt Regular
+Font Small:       12pt Regular
+```
+
+---
+
+### 📱 TAB 1 — Home Dashboard
+```
+┌─────────────────────────────────────┐
+│  SES Polymer Planning Schedule      │ ← Header (56pt)
+│  [Date Picker: Mon 08-25 ▾]        │
+│  [Home][Delivery][Production][Att.] │ ← TabBar (48pt)
+├─────────────────────────────────────┤
+│  Filter: [All ▾]                    │
+│                                     │
+│  ┌───────────────────────────────┐ │
+│  │ 🚚 Delivery - Line 1          │ │ ← Card
+│  │ Driver: Tom  │ Route: A       │ │
+│  │ 08/25 09:00–18:00  [Details]  │ │
+│  └───────────────────────────────┘ │
+│  ┌───────────────────────────────┐ │
+│  │ 🏭 Production - Line A        │ │ ← Card
+│  │ PVC Casing  │ 08/25–08/27     │ │
+│  │ Status: Scheduled   [Details] │ │
+│  └───────────────────────────────┘ │
+│  ┌───────────────────────────────┐ │
+│  │ 👷 Attendance                  │ │
+│  │ John (Absent)  │ Wani (Leave)  │ │
+│  └───────────────────────────────┘ │
+│                                     │
+│  ┌───────────────────────────────┐ │
+│  │  📊 Weekly Absence Analytics  │ │ ← Fixed Bottom Panel
+│  │  This Week: 2 Absences        │ │
+│  └───────────────────────────────┘ │
+├─────────────────────────────────────┤
+│  [Home] [Deliv] [Prod] [Attend]    │ ← Bottom Nav (56pt)
+└─────────────────────────────────────┘
+
+Color Coding:
+  Delivery cards:  border-left Accent Blue #2E75CC
+  Production cards: border-left Accent Green #36B37E
+  Attendance:       badge Absent=Absent Red #E53935, Leave=Accent Purple #9C27B0
+```
+
+---
+
+### 📱 TAB 2 — Delivery
+```
+┌─────────────────────────────────────┐
+│  SES Polymer Planning Schedule      │
+│  [Date Picker ▾]                    │
+│  [Home][Delivery][Production][Att.] │ ← Delivery TAB ACTIVE
+├─────────────────────────────────────┤
+│  ▶ 08/25 Mon                         │
+│  ┌───────────────────────────────┐ │
+│  │ 🚚 Line 1                      │ │
+│  │ Driver: Tom                    │ │
+│  │ Route: Route A                 │ │
+│  │ Dest: Port Klang               │ │
+│  │ ⏰ 09:00–18:00     [Details ▶] │ │
+│  └───────────────────────────────┘ │
+│  ┌───────────────────────────────┐ │
+│  │ 🚚 Line 2                      │ │
+│  │ Driver: Ali                    │ │
+│  │ Route: Route B                 │ │
+│  │ Dest: Shah Alam                │ │
+│  │ ⏰ 08:00–17:00     [Details ▶] │ │
+│  └───────────────────────────────┘ │
+│                                     │
+│  ▶ 08/26 Tue                         │
+│  ┌───────────────────────────────┐ │
+│  │ (items grouped by date)        │ │
+│  └───────────────────────────────┘ │
+│                                     │
+│          ╭─────────╮                │ ← FAB + (center bottom)
+│          │   +     │                │
+│          ╰─────────╯                │
+├─────────────────────────────────────┤
+│  [Home] [Deliv] [Prod] [Attend]    │
+└─────────────────────────────────────┘
+
+Fields Order (card): Icon → Line Title → Driver → Route → Destination → Time → Details Button
+Color: Card bg #FFFFFF, left border #2E75CC
+```
+
+---
+
+### 📱 TAB 3 — Production (Gantt / Timeline)
+```
+┌──────────────────────────────────────────────────────────┐
+│  SES Polymer Planning Schedule                           │
+│  [Date Picker ▾]  [Range: 7d ▾]                          │
+│  [Home][Delivery][Production][Att.]                      │ ← Production TAB ACTIVE
+├──────────────────────────────────────────────────────────┤
+│            │ 08/25  │ 08/26  │ 08/27  │ 08/28  │ ...     │ ← Horizontal Axis (7 days)
+│            │  Mon   │  Tue   │  Wed   │  Thu   │          │
+├────────────┼────────┼────────┼────────┼────────┼────────┤
+│ Line A     │   ████████████████████                        │ ← Multi-day block: 3 days
+│            │  PVC Casing (08/25–08/27)                     │   Color: #36B37E
+├────────────┼────────┼────────┼────────┼────────┼────────┤
+│ Line B     │          ████████████████                     │ ← Multi-day block: 2 days
+│            │          PE Granulation                       │   Color: #FF9F1C
+├────────────┼────────┼────────┼────────┼────────┼────────┤
+│ Line C     │   ████      ████████                          │ ← Two separate blocks
+│            │  Sheeting    Extrusion                         │   Color: auto-assign
+├────────────┴─────────────────────────────────────────────┤
+│          ╭─────────╮                                       │ ← FAB +
+│          │   +     │                                       │
+│          ╰─────────╯                                       │
+├──────────────────────────────────────────────────────────┤
+│  [Home] [Deliv] [Prod] [Attend]                          │
+└──────────────────────────────────────────────────────────┘
+
+Rules:
+  Vertical Axis: dynamically parsed from P# titles → Line names
+  Horizontal Axis: default 7 days, swipe extends range
+  Multi-day: single continuous colored block spanning date columns
+  Block Height: 36pt | Left padding: 8pt for text
+  Colors: Line A=#36B37E, Line B=#FF9F1C, Line C=#2E75CC, cycling
+```
+
+---
+
+### 📱 TAB 4 — Attendance
+```
+┌─────────────────────────────────────┐
+│  SES Polymer Planning Schedule      │
+│  [Month: Aug 2026 ▾]                │
+│  [Home][Delivery][Production][Att.] │ ← Attendance TAB ACTIVE
+├─────────────────────────────────────┤
+│  Su  Mo  Tu  We  Th  Fr  Sa         │ ← Weekday Header
+│                                     │
+│  23  24  25  26  27  28  29         │
+│          ┌─┐                        │
+│          │25│      ┌─┐              │
+│          │📌│      │27│             │
+│          │Jn│      │Wn│             │
+│          │(A)│      │(L)│            │
+│          └─┘      └─┘              │
+│                                     │
+│  Legend:  📌(A)=Absent  📋(L)=Leave │
+│           Color: Red=#E53935 Purple=#9C27B0
+│                                     │
+├─────────────────────────────────────┤
+│  [Home] [Deliv] [Prod] [Attend]    │
+└─────────────────────────────────────┘
+
+Cell Size: ~44×44pt
+Badge: Initials + (A)/(L) | Color-coded background
+Parsing: A# Name (Absent) → Red badge | A# Name (Leave) → Purple badge
+```
+
+---
+
+## ✅ Summary Ready for Dev Team
+
+This document contains **everything needed to start coding**:
+- ✅ API endpoints + auth scope
+- ✅ Exact title syntax schema
+- ✅ Parsing/build pseudocode
+- ✅ Permission & refresh logic
+- ✅ Color palette (hex values)
+- ✅ Dimension specs (pt)
+- ✅ 4 annotated layouts with field order & visual rules
