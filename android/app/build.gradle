@@ -16,3 +16,8 @@ android {
         versionName "1.0.0"
     }
 }
+
+// 终极强制补丁：强制整个项目以 v2 模式编译，绕过清单检测
+project.ext {
+    flutterEmbeddingVersion = 2
+}
