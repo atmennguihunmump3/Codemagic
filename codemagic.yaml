@@ -1,18 +1,17 @@
 workflows:
-  android-workflow:
-    name: Android Workflow
+  flutter-android-workflow:
+    name: Flutter Android Workflow
     max_build_duration: 60
+    instance_type: mac_mini_m2
     environment:
-      vars:
-        PACKAGE_NAME: "io.codemagic.android"
-      node: latest
+      flutter: stable
     triggering:
       events:
         - push
     scripts:
-      - name: Set up local.properties
-        script: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-      - name: Build Android App
-        script: ./gradlew assembleDebug
+      - name: Get Flutter dependencies
+        script: flutter pub get
+      - name: Build Android APK
+        script: flutter build apk --debug
     artifacts:
-      - app/build/outputs/apk/**/*.apk
+      - build/app/outputs/flutter-apk/*.apk
