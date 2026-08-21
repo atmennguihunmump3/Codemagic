@@ -1,0 +1,18 @@
+name: SyncPlan Flutter Build
+workflows:
+  flutter-android-apk:
+    name: Build Android APK
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.19.0
+      # xcode: 15.2  ❌ 删除这一行，Android 不需要
+    working_directory: .
+    scripts:
+      - name: Flutter Clean
+        script: flutter clean
+      - name: Install Dependencies
+        script: flutter pub get
+      - name: Build APK
+        script: flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
