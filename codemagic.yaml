@@ -4,15 +4,12 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m2
     environment:
-      flutter: "3.22.0"          # ← 必须用引号！3.22.0 是最后一个完全兼容版
-      gradle: "8.3"              # ← 锁定 Gradle 版本，防止自动升级到不兼容版
+      flutter: "3.22.0"
     working_directory: .
     scripts:
-      - name: Show Flutter Version
-        script: flutter --version
       - name: Flutter Clean
         script: flutter clean
-      - name: Force Downgrade Flutter
+      - name: Force Flutter Version
         script: flutter version 3.22.0
       - name: Install Dependencies
         script: flutter pub get
