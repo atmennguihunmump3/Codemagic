@@ -7,11 +7,10 @@ workflows:
       flutter: "3.19.6"
     working_directory: .
     scripts:
-      - name: Pin Flutter to exact version
+      - name: Override broken Groovy file BEFORE compile
         script: |
-          flutter channel stable
-          flutter version v3.19.6
-          flutter --version
+          cp -f flutter_tools/gradle/src/main/groovy/flutter.groovy /Users/builder/programs/flutter/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy
+          echo "✅ Replaced broken flutter.groovy"
       - name: Flutter Clean
         script: flutter clean
       - name: Install Dependencies
