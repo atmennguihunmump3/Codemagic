@@ -4,8 +4,7 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m2
     environment:
-      flutter: 3.19.0
-      # xcode: 15.2  ❌ 删除这一行，Android 不需要
+      flutter: 3.22.0   # ← 关键：指定兼容版本
     working_directory: .
     scripts:
       - name: Flutter Clean
