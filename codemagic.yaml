@@ -4,9 +4,14 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m1
     environment:
-      flutter: "3.19.0"
+      flutter: "3.19.6"
     working_directory: .
     scripts:
+      - name: Pin Flutter to exact version
+        script: |
+          flutter channel stable
+          flutter version v3.19.6
+          flutter --version
       - name: Flutter Clean
         script: flutter clean
       - name: Install Dependencies
