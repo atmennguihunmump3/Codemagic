@@ -2,7 +2,7 @@ name: SyncPlan Flutter Build
 workflows:
   flutter-android-apk:
     name: Build Android APK
-    instance_type: windows
+    instance_type: windows_x2
     environment:
       flutter: "3.22.0"
     working_directory: .
