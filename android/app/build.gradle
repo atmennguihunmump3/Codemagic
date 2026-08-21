@@ -1,0 +1,21 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.syncplan.syncplan_app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.syncplan.syncplan_app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+}
+
+// 终极补丁：彻底在底层切断 V1 嵌入，强制使用 V2 嵌入环境
+project.ext {
+    flutterEmbeddingVersion = 2
+}
