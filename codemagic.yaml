@@ -4,13 +4,9 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m1
     environment:
-      flutter: "3.19.6"
+      flutter: "3.24.0"
     working_directory: .
     scripts:
-      - name: Override broken Groovy file BEFORE compile
-        script: |
-          cp -f flutter_tools/gradle/src/main/groovy/flutter.groovy /Users/builder/programs/flutter/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy
-          echo "✅ Replaced broken flutter.groovy"
       - name: Flutter Clean
         script: flutter clean
       - name: Install Dependencies
