@@ -4,13 +4,17 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m2
     environment:
-      flutter: 3.19.0
-      # xcode: 15.2  ❌ 删除这一行，Android 不需要
+      flutter: "3.19.0"
     working_directory: .
     scripts:
+      - name: Switch to Flutter 3.19.0
+        script: |
+          flutter channel stable
+          flutter downgrade v3.19.0
+          flutter --version
       - name: Flutter Clean
         script: flutter clean
-      - name: Install Dependencies
+      - name: Get Dependencies
         script: flutter pub get
       - name: Build APK
         script: flutter build apk --release
