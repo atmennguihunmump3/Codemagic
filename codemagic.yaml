@@ -2,16 +2,11 @@ name: SyncPlan Flutter Build
 workflows:
   flutter-android-apk:
     name: Build Android APK
-    instance_type: mac_mini
+    instance_type: windows
     environment:
       flutter: "3.22.0"
     working_directory: .
     scripts:
-      - name: Ensure Flutter 3.22.0
-        script: |
-          flutter channel stable
-          flutter downgrade v3.22.0
-          flutter --version
       - name: Flutter Clean
         script: flutter clean
       - name: Install Dependencies
