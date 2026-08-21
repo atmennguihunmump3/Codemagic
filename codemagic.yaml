@@ -2,21 +2,19 @@ name: SyncPlan Flutter Build
 workflows:
   flutter-android-apk:
     name: Build Android APK
-    instance_type: mac_mini_m2
+    instance_type: mac_mini
     environment:
-      flutter: "3.19.0"
+      flutter: "3.22.0"
     working_directory: .
     scripts:
-      - name: Use pre-installed Flutter 3.19.0
+      - name: Ensure Flutter 3.22.0
         script: |
-          ls -la /Users/builder/flutter/
-          if [ -d "/Users/builder/flutter/3.19.0" ]; then
-            export PATH="/Users/builder/flutter/3.19.0/bin:$PATH"
-            flutter --version
-          fi
+          flutter channel stable
+          flutter downgrade v3.22.0
+          flutter --version
       - name: Flutter Clean
         script: flutter clean
-      - name: Get Dependencies
+      - name: Install Dependencies
         script: flutter pub get
       - name: Build APK
         script: flutter build apk --release
