@@ -2,11 +2,18 @@ name: SyncPlan Flutter Build
 workflows:
   flutter-android-apk:
     name: Build Android APK
-    instance_type: linux
+    instance_type: mac_mini
     environment:
       flutter: "3.22.0"
     working_directory: .
     scripts:
+      - name: Fix QName error BEFORE Gradle runs
+        script: |
+          GROOVY_FILE="/Users/builder/programs/flutter/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+          if [ -f "$GROOVY_FILE" ]; then
+            sed -i.bak '/groovy.xml.QName/d' "$GROOVY_FILE"
+            echo "✅ Removed QName import line"
+          fi
       - name: Flutter Clean
         script: flutter clean
       - name: Install Dependencies
