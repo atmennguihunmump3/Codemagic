@@ -4,11 +4,9 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m1
     environment:
-      flutter: "3.22.0"
+      flutter: "3.19.0"
     working_directory: .
     scripts:
-      - name: Fix Groovy imports
-        script: sed -i.bak '1i\import groovy.xml.XmlParser;\nimport groovy.xml.QName;' /Users/builder/programs/flutter/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy || true
       - name: Flutter Clean
         script: flutter clean
       - name: Install Dependencies
