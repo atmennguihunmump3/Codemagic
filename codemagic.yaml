@@ -7,12 +7,15 @@ workflows:
       flutter: "3.22.0"
     working_directory: .
     scripts:
-      - name: Fix QName error BEFORE Gradle runs
+      - name: FULL FIX — Repair all Groovy XML classes
         script: |
           GROOVY_FILE="/Users/builder/programs/flutter/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
           if [ -f "$GROOVY_FILE" ]; then
-            sed -i.bak '/groovy.xml.QName/d' "$GROOVY_FILE"
-            echo "✅ Removed QName import line"
+            # Step 1: Add missing import statements at top
+            sed -i.bak '1i\
+import groovy.xml.XmlParser\
+import groovy.xml.QName' "$GROOVY_FILE"
+            echo "✅ Added missing imports"
           fi
       - name: Flutter Clean
         script: flutter clean
