@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: 3.19.0
-      xcode: 15.2
+      # xcode: 15.2  ❌ 删除这一行，Android 不需要
     working_directory: .
     scripts:
       - name: Flutter Clean
@@ -16,7 +16,3 @@ workflows:
         script: flutter build apk --release
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
-    publishing:
-      email:
-        recipients:
-          - your-email@example.com
