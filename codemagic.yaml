@@ -4,11 +4,13 @@ workflows:
     name: Build Android APK
     instance_type: mac_mini_m2
     environment:
-      flutter: 3.22.0   # ← 关键：指定兼容版本
+      flutter: "3.22.0"   # ← 关键！必须用引号，这版与 Groovy 4 完全兼容
     working_directory: .
     scripts:
       - name: Flutter Clean
         script: flutter clean
+      - name: Check Flutter Version
+        script: flutter --version
       - name: Install Dependencies
         script: flutter pub get
       - name: Build APK
